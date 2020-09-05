@@ -9,24 +9,22 @@ class NodeThread(threading.Thread):
 
   def run(self, string=''):
     if self.role == 'recv':
+      # Bind and listen on the node
+      self.node.bind()
+      self.node.listen()
+      # Accept the connections
       while True:
-        # Accept the connections
         conn = self.node.accept()
-        close = False
-        # Check if the connection is to be closes
-        while not close:
-          request = self.node.receive(conn)
-          close = self.node.parseRequest(request)
+        request = self.node.receive(conn)
+        self.node.parseRequest(request, conn)
         conn.close()
+
     elif self.role == 'send':
+      print('Entering sender role')
       # Message to be sent
       string = 'Message::Hello World'
       for seed in self.node.seeds:
-        string_disconnect = f'Disconnect::{seed}'
         host, port = seed.split(':')
-        # Check if the socket is still connected
-        data = self.node.receive()
-        if data == None:
-          self.node.connect(host, int(port))
+        self.node.connect(host, int(port))
         self.node.send(string)
-        self.node.send(string_disconnect)
+        self.node.close()

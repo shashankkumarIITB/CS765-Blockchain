@@ -23,14 +23,15 @@ class Peer(Node):
     # Read the seed attributes from the csv file
     with open('seeds.csv', 'r', newline='\n') as file:
       reader = csv.DictReader(file, delimiter=',')
+      string_connect = f'Connect::{self.host}:{self.port}'
       for i in range(self.num_seeds):
         row = next(reader)
         if i in indices:
           self.connect(row['host'], int(row['port']))
-          string_connect = f'Connect::{self.host}:{self.port}'
           self.send(string_connect)
           self.getPeerList()
           self.seeds.append(f'{row["host"]}:{row["port"]}')
+          self.close()
 
   # Get peer list from the connected seeds
   def getPeerList(self):    
@@ -50,27 +51,24 @@ class Peer(Node):
       for i in range(config.NUM_PEERS):
         self.peers.append(peers_list[indices[i]])
 
-  # Function to parse request, returns whether to close the connection
-  def parseRequest(self, request):
+  # Function to parse request
+  def parseRequest(self, request, connection):
     request_list = request.split('::')
     if (request_list[0] == 'Disconnect'):
       addr = f'{request_list[1]}'
       if addr in self.peers:
         self.peers.remove(addr)
-      return True
     else:
       print(request)
-      return False
 
+
+# Create a peer instance 
 peer = Peer(config.HOST, config.PORT, config.MAX_LISTEN)
 peer.connectToSeeds()
 peer.connectToPeers()
-print(peer.peers_available)
-print(peer.seeds)
 
 thread_recv = NodeThread(peer, 'recv')
 thread_send = NodeThread(peer, 'send')
 
-# thread_recv.start()
-# thread_send.start()
-peer.send('Messageadssdfhuk')
+thread_recv.start()
+thread_send.start()

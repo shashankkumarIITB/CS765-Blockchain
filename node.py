@@ -8,10 +8,8 @@ class Node():
     # AF_INET => IPv4
     # SOCK_STREAM => TCP
     self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Configure the socket to reuse the port
     self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    self.client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # Set the host and port
     self.host = host
     self.port = int(port)
@@ -36,22 +34,21 @@ class Node():
 
   # Connect to the specified host and port
   def connect(self, host, port):
+    self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.client.connect((host, port))
 
   # Send the string after encoding it
   def send(self, string, connection=None):
     string = string.encode()
     chunks_sent = 0
-    chunk_size = 0
     while chunks_sent < len(string):
+      chunk_size = 0
       if connection:
         chunk_size = connection.send(string[chunks_sent : chunks_sent + self.MAX_BYTES])
       else:
-        print(string[chunks_sent: chunks_sent + self.MAX_BYTES])
         chunk_size = self.client.send(string[chunks_sent : chunks_sent + self.MAX_BYTES])
-        print(chunk_size)
       chunks_sent += chunk_size
-      print(chunks_sent)
 
   # Receive the string 
   def receive(self, connection=None):
