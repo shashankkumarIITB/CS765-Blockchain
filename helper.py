@@ -5,4 +5,4 @@ def GetRandomList(begin, end, length):
   result = set()
   while len(result) < length:
     result.add(random.randint(begin, end))
-  return result
+  return list(result)
