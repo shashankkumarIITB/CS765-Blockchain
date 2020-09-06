@@ -1,4 +1,5 @@
 import random, socket
+import helper
 
 class Node():
   MAX_BYTES = 10
@@ -16,6 +17,7 @@ class Node():
     if withrandom:
       self.port += random.randint(1, 100)
     self.max_listen = int(max_listen)
+    self.hashes = set()
     self.messages = []
 
   # Bind the socket to a port
@@ -67,3 +69,39 @@ class Node():
   # Close the socket connection
   def close(self):
     self.client.close()
+
+  # Broadcast the hash of the message received
+  def broadcastMessage(self, request, role='seed'):
+    timestamp, host, port, message = request.split(':')
+    request_hash = helper.getHash(request)
+    message_hash = helper.getHash(message)
+    message_dict = {
+      'timestamp': timestamp,
+      'host': host,
+      'port': port,
+      'hash': message_hash
+    }
+
+    # Add the hash of the message in the 
+    if request_hash not in self.hashes:
+      self.messages.append(message_dict)
+      print(self.messages)
+
+      # Broadcast to the seeds
+      sender = f'{host}:{port}'
+      for seed in self.seeds:
+        if sender != seed:
+          host, port = seed.split(':')
+          self.connect(host, int(port))
+          self.send(f'Message::{request}')
+          self.close()
+
+      # Broadcast to the peers if the node is a peer node
+      if role == 'peer':
+        for peer in self.peers:
+          if sender != peer:
+            host, port = peer.split(':')
+            self.connect(host, int(port))
+            self.send(f'Message::{request}')
+            self.close()
+
