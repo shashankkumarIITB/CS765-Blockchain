@@ -5,8 +5,7 @@ import time
 import helper
 
 class Seed(Node):
-
-  def __init__(self, host, port, max_listen, withrandom):
+  def __init__(self, host, port, max_listen, withrandom=False):
     # Call to the node constructor
     super().__init__(host, port, max_listen, 'seed', withrandom)
 
@@ -33,26 +32,26 @@ class Seed(Node):
   def parseRequest(self, request, connection=None):
     request_list = request.split('::')
     if request_list[0] == 'Connect':
-      self.writeFile
+      self.writeLog(request)
       peer = self.addPeer(request_list[1])
       self.sendPeerList(peer, connection)
     elif request_list[0] == 'Disconnect':
+      self.writeLog(request)
       self.disconnectSeed(request_list[1])
       self.disconnectPeer(request_list[1])
     elif request_list[0] == 'Message':
       self.broadcastMessage(request_list[1])
     elif request_list[0] == 'DeadNode':
+      self.writeLog(request)
       self.processDeadNode(request_list[1])
     else:
-      print(request)
+      self.writeLog(f'Invalid:Unexpected request - {request}')
 
 # Create a seed instance
-seed = Seed(config.HOST, config.PORT, config.MAX_LISTEN, True)
-print(f'Seed: Accepting connections on {seed.host}:{seed.port}')
-
+seed = Seed(config.HOST, config.PORT, config.MAX_LISTEN, False)
+seed.writeLog(f'Seed::Accepting connections on {seed.host}:{seed.port}')
 # Create a thread to receive requests
 thread_recv = NodeThread(seed, 'recv')
-
 # Start the thread
 thread_recv.start()
 

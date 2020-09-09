@@ -1,4 +1,5 @@
 import random, socket, sys, threading
+from datetime import datetime
 import helper
 
 class Node():
@@ -37,14 +38,14 @@ class Node():
     try:
       self.server.bind((self.host, self.port))
     except socket.error as err:
-      print(f'Error while binding {host}:{port}')
+      print(f'Error while binding {self.host}:{self.port}')
 
   # Listen on the socket
   def listen(self):
     try:
       self.server.listen(self.max_listen)
     except socket.error as err:
-      print(f'Error while listening on {host}:{port}')
+      print(f'Error while listening on {self.host}:{self.port}')
 
   # Accept connections on the socket
   def accept(self):
@@ -52,7 +53,7 @@ class Node():
       conn, addr = self.server.accept()
       return conn 
     except socket.error as err:
-      print(f'Error while accepting connection on {host}:{port} from {addr}')
+      print(f'Error while accepting connection on {self.host}:{self.port} from {addr}')
 
   # Connect to the specified host and port and return True if connected
   def connect(self, host, port):
@@ -135,10 +136,13 @@ class Node():
       'hash': message_hash
     }
     
-    # Add the hash of the message in the 
     if request_hash not in self.hashes:
+    # Add the hash of the message in the set of hashes 
       self.hashes.add(request_hash) 
+      # Add message to the messages blockchain
       self.messages.append(message_dict)
+      # Write to logfile
+      self.writeLog(f'Message::{request}')
 
       # Broadcast to all the seeds except the sender
       sender = f'{host}:{port}'
@@ -158,4 +162,10 @@ class Node():
             self.send(f'Message::{request}')
             self.close()
 
-  # Function to write log to 
+  # Function to write log to file
+  def writeLog(self, string):
+    with open(f'logfile_{self.port}.txt', 'a+') as file:
+      time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
+      string = f'{time_now}::{string}'
+      print(string)
+      file.write(f'{string}\n')

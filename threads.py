@@ -23,10 +23,10 @@ class NodeThread(threading.Thread):
 
     elif self.role == 'send':
       # Message to be sent
-      time_now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-      string = f'Message::{time_now}:{self.node.host}:{self.node.port}:Hello World!'
       for _ in range(10):
         time.sleep(5)
+        time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
+        string = f'Message::{time_now}:{self.node.host}:{self.node.port}:Hello World!'
         seeds = self.node.seeds.copy()
         for seed in seeds:
           host, port = seed.split(':')
@@ -43,10 +43,10 @@ class NodeThread(threading.Thread):
 
     elif self.role == 'live':
       # Send liveliness messages to peers in the nodes
-      time_now = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-      string = f'LivenessRequest::{time_now}:{self.node.host}:{self.node.port}'
       while True:
-        time.sleep(2)
+        time.sleep(13)
+        time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
+        string = f'LivenessRequest::{time_now}:{self.node.host}:{self.node.port}'
         peers = self.node.peers.copy()
         for peer in peers:
           requests_sent = self.node.peers_live[peer]
