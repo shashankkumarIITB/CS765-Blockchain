@@ -112,5 +112,5 @@ thread_live = NodeThread(peer, 'live')
 
 # Start the threads
 thread_recv.start()
-# thread_send.start()
+thread_send.start()
 thread_live.start()

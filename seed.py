@@ -8,13 +8,7 @@ class Seed(Node):
 
   def __init__(self, host, port, max_listen, withrandom):
     # Call to the node constructor
-    super().__init__(host, port, max_listen, 'seed', False)
-
-  # Print the list of all the peers connected through this seed
-  def printPeerList(self):
-    print('Node: Displaying list of peers on this seed')
-    for peer in self.peers:
-      print(f"{peer}")
+    super().__init__(host, port, max_listen, 'seed', withrandom)
 
   # Send the peer list to the connected peer
   def sendPeerList(self, addr, connection):
@@ -39,8 +33,8 @@ class Seed(Node):
   def parseRequest(self, request, connection=None):
     request_list = request.split('::')
     if request_list[0] == 'Connect':
+      self.writeFile
       peer = self.addPeer(request_list[1])
-      print(self.printPeerList())
       self.sendPeerList(peer, connection)
     elif request_list[0] == 'Disconnect':
       self.disconnectSeed(request_list[1])
@@ -53,8 +47,8 @@ class Seed(Node):
       print(request)
 
 # Create a seed instance
-seed = Seed(config.HOST, config.PORT, config.MAX_LISTEN, False)
-print(f'Node: Accepting connections on {seed.host}:{seed.port}')
+seed = Seed(config.HOST, config.PORT, config.MAX_LISTEN, True)
+print(f'Seed: Accepting connections on {seed.host}:{seed.port}')
 
 # Create a thread to receive requests
 thread_recv = NodeThread(seed, 'recv')

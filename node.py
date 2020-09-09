@@ -1,10 +1,11 @@
-import random, socket, sys
+import random, socket, sys, threading
 import helper
 
 class Node():
   MAX_BYTES = 10
-
   def __init__(self, host, port, max_listen, role, withrandom=False):
+    # Lock to avoid race conditions
+    self.lock = threading.Lock() 
     # Set the host and port
     self.host = host
     self.port = int(port)
@@ -49,7 +50,6 @@ class Node():
   def accept(self):
     try:
       conn, addr = self.server.accept()
-      print(f"Node: Received a request from {addr}")
       return conn 
     except socket.error as err:
       print(f'Error while accepting connection on {host}:{port} from {addr}')
@@ -57,11 +57,13 @@ class Node():
   # Connect to the specified host and port and return True if connected
   def connect(self, host, port):
     try:
+      self.lock.acquire()
       self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       self.client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
       self.client.connect((host, int(port)))
       return True
     except socket.error as err:
+      self.lock.release()
       print(f'Error while connecting to {host}:{port}{err}')
       return False
 
@@ -97,6 +99,8 @@ class Node():
       self.client.close()
     except socket.error as err:
       print(f'Error while closing socket on {host}:{port}')
+    finally:
+      self.lock.release()
 
   # Function to add a peer
   def addPeer(self, request):
@@ -154,3 +158,4 @@ class Node():
             self.send(f'Message::{request}')
             self.close()
 
+  # Function to write log to 
