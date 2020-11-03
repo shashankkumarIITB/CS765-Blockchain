@@ -4,6 +4,7 @@ import helper
 
 class Node():
   MAX_BYTES = 10
+  
   def __init__(self, host, port, max_listen, role, withrandom=False):
     # Lock to avoid race conditions
     self.lock = threading.Lock() 

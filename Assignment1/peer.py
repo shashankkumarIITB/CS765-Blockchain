@@ -6,7 +6,7 @@ from threads import NodeThread
 from datetime import datetime
 
 class Peer(Node):
-  def __init__(self, host, port, max_listen, withRandom=False):
+  def __init__(self, host, port, max_listen, withRandom=True):
     # Number of seeds to connect in the network
     self.num_seeds = config.NUM_SEEDS // 2 + 1
     self.peers_available = set()

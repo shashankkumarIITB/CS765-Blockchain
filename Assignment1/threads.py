@@ -56,5 +56,6 @@ class NodeThread(threading.Thread):
               self.node.send(string)
               self.node.close()
             self.node.peers_live[peer] += 1
+            print(self.node.peers_live)
           else:
             self.node.reportDeadPeer(peer)
