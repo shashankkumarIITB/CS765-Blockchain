@@ -1,0 +1,74 @@
+import threading
+import time
+from datetime import datetime 
+
+# Thread class to receive and send messages 
+class NodeThread(threading.Thread):
+  def __init__(self, node, role):
+    threading.Thread.__init__(self)
+    self.node = node
+    self.role = role
+
+  def run(self, string=''):
+    if self.role == 'recv':
+      self.run_recv()
+    elif self.role == 'send':
+      self.run_message()
+    elif self.role == 'live':
+      self.run_live()
+    elif self.role == 'pow':
+      self.run_pow()
+
+
+  def run_recv(self):
+    # Bind and listen on the node
+    self.node.bind()
+    self.node.listen()
+    # Accept the connections
+    while True:
+      conn = self.node.accept()
+      request = self.node.receive(conn)
+      self.node.parseRequest(request, conn)
+      conn.close()
+
+  def run_message(self):
+    # Message to be sent
+    for _ in range(10):
+      time.sleep(5)
+      time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
+      string = f'Message::{time_now}:{self.node.host}:{self.node.port}:Hello World!'
+      seeds = self.node.seeds.copy()
+      for seed in seeds:
+        host, port = seed.split(':')
+        if self.node.connect(host, port):
+          self.node.send(string)
+          self.node.close()
+
+      peers = self.node.peers.copy()
+      for peer in peers:
+        host, port = peer.split(':')
+        if self.node.connect(host, port):
+          self.node.send(string)
+          self.node.close()
+
+  def run_live(self):
+    # Send liveliness messages to peers in the nodes
+    while True:
+      time.sleep(13)
+      time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
+      string = f'LivenessRequest::{time_now}:{self.node.host}:{self.node.port}'
+      peers = self.node.peers.copy()
+      for peer in peers:
+        requests_sent = self.node.peers_live[peer]
+        if requests_sent < 3:
+          host, port = peer.split(':')
+          if self.node.connect(host, port):
+            self.node.send(string)
+            self.node.close()
+          self.node.peers_live[peer] += 1
+          print(self.node.peers_live)
+        else:
+          self.node.reportDeadPeer(peer)
+
+  def run_pow(self):
+    
