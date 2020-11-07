@@ -1,18 +1,19 @@
 import csv, threading, socket
-import config_peer as config
-import helper
-from node import Node
-from threads import NodeThread
 from datetime import datetime
 
-class Peer(Node):
-  def __init__(self, host, port, max_listen, withRandom=True):
+import config_peer as config
+import helper
+from miner import Miner
+from threads import NodeThread
+
+class Peer(Miner):
+  def __init__(self, host, port, max_listen, withRandom=True, hashing_power=1, time_interarrival=1):
     # Number of seeds to connect in the network
     self.num_seeds = config.NUM_SEEDS // 2 + 1
     self.peers_available = set()
     self.peers_live = {}
     # Call to the node constructor
-    super().__init__(host, port, max_listen, 'peer', withRandom)
+    super().__init__(host, port, max_listen, 'peer', withRandom, hashing_power, time_interarrival)
 
   # Connect to the seeds in the network
   def connectToSeeds(self):
@@ -32,7 +33,6 @@ class Peer(Node):
             self.seeds.add(f'{row["host"]}:{row["port"]}')
             self.send(string_connect)
             self.getPeerList()
-            self.close()
 
   # Get peer list from the connected seeds
   def getPeerList(self):    
@@ -96,6 +96,8 @@ class Peer(Node):
       self.disconnectPeer(request_list[1])
     elif request_list[0] == 'Message':
       self.processMessage(request_list[1])
+    elif request_list[0] == 'Block':
+      self.processBlock(request_list[1])
     elif request_list[0] == 'LivenessRequest':
       self.writeLog(request)
       self.sendLivenessReply(request_list[1])
@@ -105,17 +107,20 @@ class Peer(Node):
     else:
       self.writeLog(f'Invalid:Unexpected request - {request}')
 
-# Create a peer instance 
-peer = Peer(config.HOST, config.PORT, config.MAX_LISTEN, True)
-peer.connectToSeeds()
-peer.connectToPeers()
+if __name__ == '__main__':
+  # Create a peer instance 
+  peer = Peer(config.HOST, config.PORT, config.MAX_LISTEN, True)
+  peer.connectToSeeds()
+  peer.connectToPeers()
 
-# Create threads for the peer to send and receive messages
-thread_recv = NodeThread(peer, 'recv')
-thread_send = NodeThread(peer, 'send')
-# thread_live = NodeThread(peer, 'live')
+  # Create threads for the peer to send and receive messages
+  thread_recv = NodeThread(peer, 'recv')
+  thread_pow = NodeThread(peer, 'pow')
+  # thread_send = NodeThread(peer, 'send')
+  # thread_live = NodeThread(peer, 'live')
 
-# Start the threads
-thread_recv.start()
-thread_send.start()
-# thread_live.start()
+  # Start the threads
+  thread_recv.start()
+  thread_pow.start()
+  # thread_send.start()
+  # thread_live.start()

@@ -1,13 +1,14 @@
-import config_seed as config
-from node import Node
-from threads import NodeThread
 import time
+
+import config_seed as config
+from miner import Miner
+from threads import NodeThread
 import helper
 
-class Seed(Node):
-  def __init__(self, host, port, max_listen, withrandom=False):
+class Seed(Miner):
+  def __init__(self, host, port, max_listen, withrandom=False, hashing_power=1, time_interarrival=1):
     # Call to the node constructor
-    super().__init__(host, port, max_listen, 'seed', withrandom)
+    super().__init__(host, port, max_listen, 'seed', withrandom, hashing_power, time_interarrival)
 
   # Send the peer list to the connected peer
   def sendPeerList(self, addr, connection):
@@ -20,6 +21,13 @@ class Seed(Node):
     if peersFound:
       string = string[:-1]
     return self.send(string, connection)
+
+  # Function to send the existing blockchain
+  def sendBlockchain(self, addr, connection):
+    self.lock_blockchain.acquire()
+    for block in self.blockchain:
+      self.send(f'Block::{block["block"].toString()}', connection)
+    self.lock_blockchain.release()
 
   # Process dead node request
   def processDeadNode(self, request):
@@ -35,6 +43,7 @@ class Seed(Node):
       self.writeLog(request)
       peer = self.addPeer(request_list[1])
       self.sendPeerList(peer, connection)
+      self.sendBlockchain(peer, connection)
     elif request_list[0] == 'Disconnect':
       self.writeLog(request)
       self.disconnectSeed(request_list[1])
@@ -49,11 +58,16 @@ class Seed(Node):
     else:
       self.writeLog(f'Invalid:Unexpected request - {request}')
 
-# Create a seed instance
-seed = Seed(config.HOST, config.PORT, config.MAX_LISTEN, False)
-seed.writeLog(f'Seed::Accepting connections on {seed.host}:{seed.port}')
-# Create a thread to receive requests
-thread_recv = NodeThread(seed, 'recv')
-# Start the thread
-thread_recv.start()
+if __name__ == '__main__':
+  # Create a seed instance
+  seed = Seed(config.HOST, config.PORT, config.MAX_LISTEN, False)
+  seed.writeLog(f'Seed::Accepting connections on {seed.host}:{seed.port}')
+
+  # Create a thread to receive requests
+  thread_recv = NodeThread(seed, 'recv')
+  thread_pow = NodeThread(seed, 'pow')
+
+  # Start the thread
+  thread_recv.start()
+  thread_pow.start()
 
