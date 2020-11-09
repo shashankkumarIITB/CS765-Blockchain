@@ -24,10 +24,10 @@ class Miner(Node):
 			self.hashing_power = hashing_power
 			# Local lambda based on interarrival time
 			self.lambda_ = self.hashing_power / time_interarrival / 100
-			# Time allowed between blocks
-			self.time_between = 3600
 			# Waiting time
 			self.rg = Generator(PCG64())
+		# Time allowed between blocks
+		self.time_between = 3600
 		# Blockchain to store blocks
 		self.lock_blockchain = threading.Lock()
 		self.block_hashes = set()
@@ -50,23 +50,25 @@ class Miner(Node):
 	def processBlock(self, request):
 		timestamp_sent, host, port, hash_prev, merkle_root, timestamp_block = request.split(':')
 		# Create a block from the request and add to the pending list
-		block = Block(hash_prev, merkle_root, timestamp_block)
+		data = {
+			'block': Block(hash_prev, merkle_root, timestamp_block),
+			'timestamp': timestamp_sent,
+			'host': host,
+			'port': port,
+		}
 		self.lock_pending.acquire()
-		self.pending_blocks.append(block)
+		self.pending_blocks.append(data)
 		self.lock_pending.release()
 		# Write to logfile
 		self.writeLog(f'Block::{request}')
-		# Broadcast to the nodes
-		self.broadcast(request, host, port)
-		print(f'pending blocks = {len(self.pending_blocks)}')
 
 	# Function to validate the blocks in the pending queue
 	def validateBlocks(self):
 		self.lock_pending.acquire()
 		while len(self.pending_blocks) > 0:
 			# Get the last block
-			block = self.pending_blocks.pop(0)
-			print(block.toString())
+			data = self.pending_blocks.pop(0)
+			block, timestamp_sent, host, port = data['block'], data['timestamp'], data['host'], data['port']
 			time_now = time.time()
 			# Last block in the blockchain
 			block_last = self.blockchain[-1]
@@ -74,8 +76,11 @@ class Miner(Node):
 			if (float(block.timestamp) < time_now + self.time_between and
 				float(block.timestamp) > time_now - self.time_between and
 				block.hash_prev == block_last['hash']):
-				print('Valid')
 				self.insertBlock(block)
+				# Broadcast to the nodes
+				self.broadcast(f'Block::{timestamp_sent}:{host}:{port}:{block.toString()}', host, port)
+			else:
+				self.writeLog('Miner::Discarded invalid block')
 		self.lock_pending.release() 
 
 	# Function to insert the block into blockchain

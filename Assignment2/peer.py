@@ -3,6 +3,7 @@ from datetime import datetime
 
 import config_peer as config
 import helper
+from block import Block
 from miner import Miner
 from threads import NodeThread
 
@@ -19,13 +20,14 @@ class Peer(Miner):
   def connectToSeeds(self):
     # Index of seeds to connect to in the network
     indices = helper.getRandomList(0, config.NUM_SEEDS - 1, self.num_seeds)    
-    print(f'Node: Connecting to server using {self.host}:{self.port}')
+    self.writeLog(f'Peer::Connecting to server using {self.host}:{self.port}')
 
     # Read the seed attributes from the csv file
     with open('seeds.csv', 'r', newline='\n') as file:
       reader = csv.DictReader(file, delimiter=',')
       time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
       string_connect = f'Connect::{time_now}:{self.host}:{self.port}'
+      string_blockchain = f'Blockchain::{time_now}:{self.host}:{self.port}'
       for i in range(self.num_seeds):
         row = next(reader)
         if i in indices:
@@ -33,6 +35,11 @@ class Peer(Miner):
             self.seeds.add(f'{row["host"]}:{row["port"]}')
             self.send(string_connect)
             self.getPeerList()
+            self.close()
+          if self.connect(row['host'], row['port']):
+            self.send(string_blockchain)
+            self.getBlockchain()
+            self.close()
 
   # Get peer list from the connected seeds
   def getPeerList(self):    
@@ -45,6 +52,24 @@ class Peer(Miner):
         for peer in string[1].split(','):
           self.peers_available.add(peer)
           self.writeLog(f'Peer::{peer}')
+      else:
+        self.writeLog(f'Invalid:Unexpected request - {request}')
+
+  # Sync blockchain with the seed
+  def getBlockchain(self):
+    string = self.receive()
+    if string == 'Blockchain::':
+      self.writeLog(f'Peer::No blockchain information received from the seeds')
+    else:
+      string = string.split('::')
+      if string[0] == 'Blockchain':
+        for b in string[1].split(','):
+          prev_hash, merkle_root, timestamp = b.split(':') 
+          block = Block(prev_hash, merkle_root, timestamp)
+          self.lock_pending.acquire()
+          self.pending_blocks.append(block)
+          self.lock_pending.release()
+          self.writeLog(f'Block::{block.toString()}')
       else:
         self.writeLog(f'Invalid:Unexpected request - {request}')
 

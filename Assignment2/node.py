@@ -162,7 +162,7 @@ class Node():
       self.broadcast(request, host, port)
 
   # Function to broadcast to the nodes
-  def broadcast(self, request, host, port):
+  def broadcast(self, request, host, port, to_peers=True):
     # Broadcast to all the seeds except the sender
     sender = f'{host}:{port}'
     seeds = self.seeds.copy()
@@ -173,8 +173,8 @@ class Node():
         self.send(request)
         self.close()
 
-    # Broadcast to all the peers except the sender if the node is a peer node
-    if self.role == 'peer' or True:
+    # Broadcast to all the peers except the sender if to_peers is True
+    if to_peers:
       peers = self.peers.copy()
       for peer in peers:
         if sender != peer:

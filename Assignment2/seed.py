@@ -23,11 +23,17 @@ class Seed(Miner):
     return self.send(string, connection)
 
   # Function to send the existing blockchain
-  def sendBlockchain(self, addr, connection):
+  def sendBlockchain(self, connection):
     self.lock_blockchain.acquire()
-    for block in self.blockchain:
-      self.send(f'Block::{block["block"].toString()}', connection)
+    blockFound = False
+    string = 'Blockchain::'
+    for block in self.blockchain[1:]:
+      string += f'{block["block"].toString()},'
+      blockFound = True
+    if blockFound:
+      string = string[:-1]
     self.lock_blockchain.release()
+    self.send(string, connection)
 
   # Process dead node request
   def processDeadNode(self, request):
@@ -43,13 +49,15 @@ class Seed(Miner):
       self.writeLog(request)
       peer = self.addPeer(request_list[1])
       self.sendPeerList(peer, connection)
-      self.sendBlockchain(peer, connection)
     elif request_list[0] == 'Disconnect':
       self.writeLog(request)
       self.disconnectSeed(request_list[1])
       self.disconnectPeer(request_list[1])
     elif request_list[0] == 'Message':
       self.processMessage(request_list[1])
+    elif request_list[0] == 'Blockchain':
+      self.writeLog(request)
+      self.sendBlockchain(connection)
     elif request_list[0] == 'Block':
       self.processBlock(request_list[1])
     elif request_list[0] == 'DeadNode':
