@@ -68,10 +68,9 @@ class NodeThread(threading.Thread):
     while True:
       # Time before the node generates the next block
       time_tosleep = int(self.node.computeWaitingTime())
+      print(f'Time to sleep: {time_tosleep}')
       # Sleep until pending queue is empty
-      time_tosleep = 10
       while len(self.node.pending_blocks) == 0:
-        print(time_tosleep)
         if time_tosleep == 0:
           # Acquire the lock
           self.node.lock_blockchain.acquire()
@@ -79,7 +78,7 @@ class NodeThread(threading.Thread):
           # Create a new block
           block = self.node.generateBlock(last_hash)
           self.node.insertBlock(block)
-          print(f'generated block {block.toString()}')
+          print(f'Generated block: {block.toString()}')
           # Release the lock
           self.node.lock_blockchain.release()
           # Create the block as string
