@@ -30,7 +30,7 @@ class Miner(Node):
 		self.time_between = 3600
 		# Blockchain to store blocks
 		self.lock_blockchain = threading.Lock()
-		self.block_hashes = set()
+		self.block_hashes = set([GENESIS_BLOCK['hash']])
 		self.blockchain = [GENESIS_BLOCK]
 		# Queue to store pending blocks
 		self.lock_pending = threading.Lock()
@@ -39,8 +39,19 @@ class Miner(Node):
 		# Call to the peer constructor
 		super().__init__(host, port, max_listen, role, withRandom)
 
-	def generateBlock(self, hash_prev):
-		return Block(hash_prev)
+	# Function to generate a block after Proof-of-Work
+	def generateBlock(self):
+		# Acquire lock to the blockchain before calling this function
+		# Find out the longest chain and store the hash
+		length = 0
+		hash_prev = None
+		for block in self.blockchain:
+			if block['length'] > length:
+				length = block['length']
+				hash_prev = block['hash']
+		# Create a block
+		print(f'{hash_prev} at length {length}')
+		return Block(hash_prev), length + 1
 
 	# Compute the waiting time based on the hashing power and block interarrival time
 	def computeWaitingTime(self):
@@ -60,36 +71,54 @@ class Miner(Node):
 		self.pending_blocks.append(data)
 		self.lock_pending.release()
 		# Write to logfile
-		self.writeLog(f'Block::{request}')
+		self.writeLog(f'Received::{request}')
 
 	# Function to validate the blocks in the pending queue
 	def validateBlocks(self):
 		self.lock_pending.acquire()
+		self.lock_blockchain.acquire()
 		while len(self.pending_blocks) > 0:
 			# Get the last block
 			data = self.pending_blocks.pop(0)
 			block, timestamp_sent, host, port = data['block'], data['timestamp'], data['host'], data['port']
 			time_now = time.time()
-			# Last block in the blockchain
-			block_last = self.blockchain[-1]
 			# Validate the block
 			if (float(block.timestamp) < time_now + self.time_between and
 				float(block.timestamp) > time_now - self.time_between and
-				block.hash_prev == block_last['hash']):
+				block.hash_prev in self.block_hashes):
+				# Insert the block
 				self.insertBlock(block)
 				# Broadcast to the nodes
-				self.broadcast(f'Block::{timestamp_sent}:{host}:{port}:{block.toString()}', host, port)
+				string = f'Block::{timestamp_sent}:{host}:{port}:{block.toString()}'
+				self.broadcast(string, host, port)
+				self.writeLog(string)
+				print(self.blockchain)
 			else:
 				self.writeLog('Miner::Discarded invalid block')
+		self.lock_blockchain.release() 
 		self.lock_pending.release() 
 
+	# Function to find the length of the blockchain when a block with the given previous hash is inserted
+	def getLength(self, hash_prev):
+		# Acquire the lock to the blockchain before calling this function
+		length = 0
+		for block in self.blockchain:
+			if block['hash'] == hash_prev:
+				length = block['length'] + 1
+				break
+		return length
+
 	# Function to insert the block into blockchain
-	def insertBlock(self, block):
+	def insertBlock(self, block, length=None):
+		# The lock to the blockchain should be acquired before calling this function
 		block_hash = block.getBlockHash()
-		if block_hash not in self.block_hashes:
+		# Check if the block exists in the blockchain
+		if block_hash not in self.block_hashes: 
+			if not length:
+				length = self.getLength(block.hash_prev)
 			# Create a block
 			block_dict = {
-				'length': len(self.blockchain) + 1,
+				'length': length,
 				'block': block,
 				'hash': block_hash
 			}
@@ -97,3 +126,4 @@ class Miner(Node):
 			self.block_hashes.add(block_hash) 
 			# Add block to the blockchain
 			self.blockchain.append(block_dict)
+		# Release the lock after calling this function

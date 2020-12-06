@@ -69,22 +69,24 @@ class NodeThread(threading.Thread):
       # Time before the node generates the next block
       time_tosleep = int(self.node.computeWaitingTime())
       print(f'Time to sleep: {time_tosleep}')
+      time_tosleep = 10
       # Sleep until pending queue is empty
       while len(self.node.pending_blocks) == 0:
+        print(time_tosleep)
         if time_tosleep == 0:
-          # Acquire the lock
+          # Acquire lock for generating and inserting block
           self.node.lock_blockchain.acquire()
-          last_hash = self.node.blockchain[-1]['hash'] 
           # Create a new block
-          block = self.node.generateBlock(last_hash)
-          self.node.insertBlock(block)
-          print(f'Generated block: {block.toString()}')
-          # Release the lock
+          block, length = self.node.generateBlock()
+          # Insert the block
+          self.node.insertBlock(block, length)
+          # Release the blockchain lock
           self.node.lock_blockchain.release()
-          # Create the block as string
+          # Create the block as string with the current timestamp
           time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
           string = f'Block::{time_now}:{self.node.host}:{self.node.port}:{block.toString()}' 
           self.node.broadcast(string, self.node.host, self.node.port)
+          self.node.writeLog(f'Generated {string}')
           break
         time.sleep(1)
         time_tosleep -= 1
@@ -94,7 +96,6 @@ class NodeThread(threading.Thread):
   # Function for PoW for the seed nodes
   def run_pow_seed(self):
     while True:
-      while len(self.node.pending_blocks) > 0:
-        self.node.validateBlocks()
+      self.node.validateBlocks()
 
     
