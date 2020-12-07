@@ -1,4 +1,4 @@
-import random, socket, sys, threading
+import csv, random, socket, sys, threading
 from datetime import datetime
 
 import helper
@@ -44,6 +44,8 @@ class Node():
     self.role = role
     self.peers = set()
     self.seeds = set()
+    # Create database
+    self.createDatabase()
 
   # Bind the socket to a port
   def bind(self):
@@ -190,3 +192,25 @@ class Node():
       string = f'{time_now}::{string}'
       print(string)
       file.write(f'{string}\n')
+
+  # Function to create the header for the database csv file
+  def createDatabase(self):
+    with open(f'databases/database_{self.port}.txt', 'a+') as file:
+      fieldnames = ['index', 'host', 'port', 'hash', 'hash_prev', 'merkle_root', 'timestamp']
+      writer = csv.DictWriter(file, fieldnames=fieldnames)
+      writer.writeheader()
+
+  # Function to write block to file/database
+  def writeDatabase(self, data):
+    with open(f'databases/database_{self.port}.txt', 'a+') as file:
+      fieldnames = ['index', 'host', 'port', 'hash', 'hash_prev', 'merkle_root', 'timestamp']
+      writer = csv.DictWriter(file, fieldnames=fieldnames)
+      writer.writerow({
+        'index': data['length'],
+        'hash': data['hash'],
+        'host': data['host'],
+        'port': data['port'],
+        'hash_prev': data['block'].hash_prev,
+        'merkle_root': data['block'].merkle_root,
+        'timestamp': data['block'].timestamp
+        })

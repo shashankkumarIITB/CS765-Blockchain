@@ -1,3 +1,0 @@
-2020-11-09 102120::Peer::Connecting to server using 192.168.1.7:4056
-2020-11-09 102120::Peer::No peer information received from the seeds
-2020-11-09 102121::Peer::No blockchain information received from the seeds

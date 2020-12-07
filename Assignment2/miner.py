@@ -59,13 +59,12 @@ class Miner(Node):
 
 	# Function to store and bradcast blocks of the blockchain
 	def processBlock(self, request):
-		timestamp_sent, host, port, hash_prev, merkle_root, timestamp_block = request.split(':')
+		timestamp_sent, host_block, port_block, hash_prev, merkle_root, timestamp_block = request.split(':')
 		# Create a block from the request and add to the pending list
 		data = {
 			'block': Block(hash_prev, merkle_root, timestamp_block),
-			'timestamp': timestamp_sent,
-			'host': host,
-			'port': port,
+			'host': host_block,
+			'port': port_block
 		}
 		self.lock_pending.acquire()
 		self.pending_blocks.append(data)
@@ -80,19 +79,18 @@ class Miner(Node):
 		while len(self.pending_blocks) > 0:
 			# Get the last block
 			data = self.pending_blocks.pop(0)
-			block, timestamp_sent, host, port = data['block'], data['timestamp'], data['host'], data['port']
+			block, host_block, port_block = data['block'], data['host'], data['port']
 			time_now = time.time()
 			# Validate the block
 			if (float(block.timestamp) < time_now + self.time_between and
 				float(block.timestamp) > time_now - self.time_between and
 				block.hash_prev in self.block_hashes):
 				# Insert the block
-				self.insertBlock(block)
-				# Broadcast to the nodes
-				string = f'Block::{timestamp_sent}:{host}:{port}:{block.toString()}'
-				self.broadcast(string, host, port)
-				self.writeLog(string)
-				print(self.blockchain)
+				if (self.insertBlock(block, host_block, port_block)):
+					# Broadcast to the nodes if the block was not present in the blockchain
+					string = f'Block::{time_now}:{host_block}:{port_block}:{block.toString()}'
+					self.broadcast(string, host_block, port_block)
+					self.writeLog(string)
 			else:
 				self.writeLog('Miner::Discarded invalid block')
 		self.lock_blockchain.release() 
@@ -108,8 +106,9 @@ class Miner(Node):
 				break
 		return length
 
-	# Function to insert the block into blockchain
-	def insertBlock(self, block, length=None):
+	# Function to insert the block into blockchain, returns true if the block is added to the blockchain
+	def insertBlock(self, block, host, port, length=None):
+		# Host and port are that of the creator of the block
 		# The lock to the blockchain should be acquired before calling this function
 		block_hash = block.getBlockHash()
 		# Check if the block exists in the blockchain
@@ -120,10 +119,16 @@ class Miner(Node):
 			block_dict = {
 				'length': length,
 				'block': block,
-				'hash': block_hash
+				'hash': block_hash,
+				'host': host,
+				'port': port
 			}
 			# Add the hash of the request in the set of hashes 
 			self.block_hashes.add(block_hash) 
 			# Add block to the blockchain
 			self.blockchain.append(block_dict)
-		# Release the lock after calling this function
+			# Write the block to the database
+			self.writeDatabase(block_dict)
+			return True
+		return False
+

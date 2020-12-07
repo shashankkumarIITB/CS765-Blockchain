@@ -1,13 +1,14 @@
-import threading
-import time
+import threading, time
 from datetime import datetime 
+from block import Block
 
 # Thread class to receive and send data  
 class NodeThread(threading.Thread):
-  def __init__(self, node, role):
+  def __init__(self, node, role, flood_nodes=None):
     threading.Thread.__init__(self)
     self.node = node
     self.role = role
+    self.flood_nodes = flood_nodes
 
   def run(self, string=''):
     if self.role == 'recv':
@@ -21,6 +22,8 @@ class NodeThread(threading.Thread):
         self.run_pow_peer()
       elif self.node.role == 'seed':
         self.run_pow_seed()
+    elif self.role == 'flood':
+      self.run_flood_network()
 
   def run_recv(self):
     # Bind and listen on the node
@@ -69,17 +72,15 @@ class NodeThread(threading.Thread):
       # Time before the node generates the next block
       time_tosleep = int(self.node.computeWaitingTime())
       print(f'Time to sleep: {time_tosleep}')
-      time_tosleep = 10
       # Sleep until pending queue is empty
       while len(self.node.pending_blocks) == 0:
-        print(time_tosleep)
         if time_tosleep == 0:
           # Acquire lock for generating and inserting block
           self.node.lock_blockchain.acquire()
           # Create a new block
           block, length = self.node.generateBlock()
           # Insert the block
-          self.node.insertBlock(block, length)
+          self.node.insertBlock(block, length, self.node.host, self.node.port)
           # Release the blockchain lock
           self.node.lock_blockchain.release()
           # Create the block as string with the current timestamp
@@ -98,4 +99,20 @@ class NodeThread(threading.Thread):
     while True:
       self.node.validateBlocks()
 
-    
+  # Function to flood the network with useless blocks
+  def run_flood_network(self):
+    while True:
+      # Time before the node generates the fake block
+      time_tosleep = 2
+      # Sleep until timer expires
+      while time_tosleep > 0:
+        time.sleep(1)
+        time_tosleep -= 1
+
+        # Send the block to the selected nodes 
+        for node in self.flood_nodes:
+          host, port = node.split(':')
+          if self.node.connect(host, port):
+            string = Block(hash_prev='-1').toString()
+            self.node.send(string)
+            self.node.close()
