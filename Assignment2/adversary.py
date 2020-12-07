@@ -13,7 +13,14 @@ if __name__ == '__main__':
 	peer.connectToPeers()
 
 	# Nodes to flood
-	flood_nodes = [f'{config.HOST}:{config.PORT}']
+	flood_nodes = []
+	# Use the below configuration for different levels of flooding:
+	# 10% flooding
+	flood_nodes += [f'{config.HOST}:{config.PORT}']
+	# 20% flooding
+	# flood_nodes += [f'{config.HOST}:{config.PORT + 1}']
+	# 30% flooding
+	# flood_nodes += [f'{config.HOST}:{config.PORT + 2}']
 
 	# Create threads for the peer to send and receive messages
 	thread_recv = NodeThread(peer, 'recv')
