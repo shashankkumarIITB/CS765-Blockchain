@@ -1,8 +1,10 @@
 import os, shutil
 
 # Remove the contents of the database and logfile directories
-shutil.rmtree('./databases/') 
-shutil.rmtree('./logfiles/') 
+if os.path.exists('./databases'):
+	shutil.rmtree('./databases/') 
+if os.path.exists('./logfiles'):
+	shutil.rmtree('./logfiles/') 
 
 # Initialize empty directories
 os.mkdir('./databases/')
