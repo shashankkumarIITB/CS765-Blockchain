@@ -45,6 +45,7 @@ class Node():
     self.peers = set()
     self.seeds = set()
     # Create database
+    self.lock_database = threading.Lock()
     self.createDatabase()
 
   # Bind the socket to a port
@@ -202,6 +203,8 @@ class Node():
 
   # Function to write block to file/database
   def writeDatabase(self, data):
+    # Acquire the lock before updating the database
+    self.lock_database.acquire()
     with open(f'databases/database_{self.port}.txt', 'a+') as file:
       fieldnames = ['index', 'host', 'port', 'hash', 'hash_prev', 'merkle_root', 'timestamp']
       writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -214,3 +217,4 @@ class Node():
         'merkle_root': data['block'].merkle_root,
         'timestamp': data['block'].timestamp
         })
+    self.lock_database.release()

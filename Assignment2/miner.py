@@ -50,7 +50,6 @@ class Miner(Node):
 				length = block['length']
 				hash_prev = block['hash']
 		# Create a block
-		print(f'{hash_prev} at length {length}')
 		return Block(hash_prev), length + 1
 
 	# Compute the waiting time based on the hashing power and block interarrival time

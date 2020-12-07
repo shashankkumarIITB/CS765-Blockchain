@@ -1,1 +1,0 @@
-index,host,port,hash,hash_prev,merkle_root,timestamp

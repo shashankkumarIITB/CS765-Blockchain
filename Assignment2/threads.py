@@ -101,6 +101,8 @@ class NodeThread(threading.Thread):
 
   # Function to flood the network with useless blocks
   def run_flood_network(self):
+    # Invalid block to be sent
+    block_invalid = Block(hash_prev='-1')
     while True:
       # Time before the node generates the fake block
       time_tosleep = 2
@@ -113,6 +115,7 @@ class NodeThread(threading.Thread):
         for node in self.flood_nodes:
           host, port = node.split(':')
           if self.node.connect(host, port):
-            string = Block(hash_prev='-1').toString()
+            time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
+            string = f'Block::{time_now}:{self.node.host}:{self.node.port}:{block_invalid.toString()}' 
             self.node.send(string)
             self.node.close()
