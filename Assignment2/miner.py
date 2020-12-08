@@ -10,11 +10,15 @@ from threads import NodeThread
 # 1. length: Length of chain so far
 # 2. block: block Bk-1
 # 3. hash: Hash of the block Bk-1 
+# 4. host: User who generated the blockchain
+# 5. port: Port number of the user
 
 GENESIS_BLOCK = {
 	'length': 1,
 	'block': Block('0000', '0000'),
-	'hash': '9e1c'
+	'hash': '9e1c',
+	'host': 'genesis',
+	'port': '0000'
 }
 
 class Miner(Node):

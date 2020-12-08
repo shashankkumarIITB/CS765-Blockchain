@@ -1,3 +1,4 @@
+from datetime import datetime
 import time
 
 import config_seed as config
@@ -27,8 +28,9 @@ class Seed(Miner):
     self.lock_blockchain.acquire()
     blockFound = False
     string = 'Blockchain::'
+    time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
     for block in self.blockchain[1:]:
-      string += f'{block["block"].toString()},'
+      string += f'{time_now}:{block["host"]}:{block["port"]}:{block["block"].toString()},'
       blockFound = True
     if blockFound:
       string = string[:-1]

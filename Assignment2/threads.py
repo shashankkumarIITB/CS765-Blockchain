@@ -80,14 +80,14 @@ class NodeThread(threading.Thread):
           # Create a new block
           block, length = self.node.generateBlock()
           # Insert the block
-          self.node.insertBlock(block, length, self.node.host, self.node.port)
+          self.node.insertBlock(block, self.node.host, self.node.port, length)
           # Release the blockchain lock
           self.node.lock_blockchain.release()
           # Create the block as string with the current timestamp
           time_now = datetime.now().strftime('%Y-%m-%d %H%M%S')
           string = f'Block::{time_now}:{self.node.host}:{self.node.port}:{block.toString()}' 
           self.node.broadcast(string, self.node.host, self.node.port)
-          self.node.writeLog(f'Generated {string}')
+          self.node.writeLog(f'{string}')
           break
         time.sleep(1)
         time_tosleep -= 1

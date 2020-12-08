@@ -38,7 +38,7 @@ class Peer(Miner):
             self.close()
           if self.connect(row['host'], row['port']):
             self.send(string_blockchain)
-            self.getBlockchain(row['host'], row['port'], time_now)
+            self.getBlockchain()
             self.close()
 
   # Get peer list from the connected seeds
@@ -53,10 +53,10 @@ class Peer(Miner):
           self.peers_available.add(peer)
           self.writeLog(f'Peer::{peer}')
       else:
-        self.writeLog(f'Invalid:Unexpected request - {request}')
+        self.writeLog(f'Invalid:Unexpected request - {string}')
 
   # Sync blockchain with the seed
-  def getBlockchain(self, host, port, time_now):
+  def getBlockchain(self):
     string = self.receive()
     if string == 'Blockchain::':
       self.writeLog(f'Peer::No blockchain information received from the seeds')
@@ -64,19 +64,9 @@ class Peer(Miner):
       string = string.split('::')
       if string[0] == 'Blockchain':
         for b in string[1].split(','):
-          prev_hash, merkle_root, timestamp = b.split(':') 
-          block = Block(prev_hash, merkle_root, timestamp)
-          data = {
-            'block': block,
-            'timestamp': time_now,
-            'host': host,
-            'port': port,
-          }
-          self.lock_pending.acquire()
-          self.pending_blocks.append(data)
-          self.lock_pending.release()
+          self.processBlock(b)
       else:
-        self.writeLog(f'Invalid:Unexpected request - {request}')
+        self.writeLog(f'Invalid:Unexpected request - {string}')
 
   # Connect to peers on the network
   def connectToPeers(self):

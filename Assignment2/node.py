@@ -12,7 +12,7 @@ import helper
 #   }
 
 class Node():
-  MAX_BYTES = 10
+  MAX_BYTES = 1024
   
   def __init__(self, host, port, max_listen, role, withrandom=False):
     # Lock to avoid race conditions while connecting to socket
