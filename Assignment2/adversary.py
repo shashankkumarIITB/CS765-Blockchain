@@ -18,9 +18,9 @@ if __name__ == '__main__':
 	# 10% flooding
 	flood_nodes += [f'{config.HOST}:{config.PORT}']
 	# 20% flooding
-	# flood_nodes += [f'{config.HOST}:{config.PORT + 1}']
+	flood_nodes += [f'{config.HOST}:{config.PORT + 1}']
 	# 30% flooding
-	# flood_nodes += [f'{config.HOST}:{config.PORT + 2}']
+	flood_nodes += [f'{config.HOST}:{config.PORT + 2}']
 
 	# Create threads for the peer to send and receive messages
 	thread_recv = NodeThread(peer, 'recv')
